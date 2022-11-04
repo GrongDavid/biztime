@@ -17,8 +17,17 @@ router.get('/', async function getAllCompanies(req, res, next){
 router.get('/:code', async function getCompany(req, res, next){
     try {
         let {code} = req.body
-        let result = await db.query('SELECT * FROM companies WHERE code=$1', [code])
-        return res.send({company: result.rows})
+        let result = await db.query(`
+        SELECT c.code, c.name, i.industry 
+        FROM companies AS c 
+        LEFT JOIN companies_industries AS ci 
+        ON c.code = ci.company_code 
+        LEFT JOIN industries as i 
+        ON ci.industry_code = i.code 
+        WHERE c.code = $1 `, [code])
+        
+        let industry = result.rows.map(row => row.industry)
+        return res.send({company: result.rows, industry})
     } catch (e) {
         let error = new expressError(e, 404)
         return next(error)
